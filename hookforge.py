@@ -1,108 +1,151 @@
 import streamlit as st
 import random
 import io
+import urllib.parse
 
 # Streamlit page configuration
 st.set_page_config(page_title="HookForge", page_icon="🎥", layout="wide")
 
-# Initialize session state for theme
+# Initialize session state
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
+if "mode" not in st.session_state:
+    st.session_state.mode = "YouTube"
 
-# Custom CSS for light and dark themes
+# Custom CSS for themes
 def get_theme_css():
-    if st.session_state.theme == "dark":
-        return """
-        <style>
-        .main { background-color: #1e1e1e; color: #ffffff; }
-        .stButton>button {
-            background-color: #ff4b4b;
-            color: white;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: bold;
-        }
-        .stButton>button:hover {
-            background-color: #e04343;
-        }
-        .hook-card {
-            background-color: #2a2a2a;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-        }
-        .hook-title { color: #ffffff; font-size: 18px; font-weight: bold; }
-        .idea-card {
-            background-color: #2a2a2a;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-        }
-        .sidebar .sidebar-content { background-color: #2a2a2a; }
-        </style>
+    themes = {
+        "light": """
+            .main { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+            .sidebar .sidebar-content { background: #ffffff; }
+            .hook-card, .idea-card {
+                background: white;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+                margin-bottom: 15px;
+                transition: transform 0.2s;
+            }
+            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .stButton>button {
+                background: #ff4b4b;
+                color: white;
+                border-radius: 10px;
+                padding: 12px 24px;
+                font-weight: bold;
+                transition: background 0.2s;
+            }
+            .stButton>button:hover { background: #e04343; }
+            .hook-title, .idea-title { color: #333; font-size: 20px; font-weight: bold; }
+        """,
+        "dark": """
+            .main { background: linear-gradient(135deg, #1e1e1e 0%, #434343 100%); color: #fff; }
+            .sidebar .sidebar-content { background: #2a2a2a; }
+            .hook-card, .idea-card {
+                background: #2a2a2a;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+                margin-bottom: 15px;
+                transition: transform 0.2s;
+            }
+            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .stButton>button {
+                background: #ff4b4b;
+                color: white;
+                border-radius: 10px;
+                padding: 12px 24px;
+                font-weight: bold;
+                transition: background 0.2s;
+            }
+            .stButton>button:hover { background: #e04343; }
+            .hook-title, .idea-title { color: #fff; font-size: 20px; font-weight: bold; }
+        """,
+        "neon": """
+            .main { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: #fff; }
+            .sidebar .sidebar-content { background: #1a2a44; }
+            .hook-card, .idea-card {
+                background: #1a2a44;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 0 15px rgba(0,255,255,0.5);
+                margin-bottom: 15px;
+                transition: transform 0.2s;
+            }
+            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .stButton>button {
+                background: #00ffcc;
+                color: #000;
+                border-radius: 10px;
+                padding: 12px 24px;
+                font-weight: bold;
+                transition: background 0.2s;
+            }
+            .stButton>button:hover { background: #00ccaa; }
+            .hook-title, .idea-title { color: #00ffcc; font-size: 20px; font-weight: bold; }
+        """,
+        "creator": """
+            .main { 
+                background: linear-gradient(135deg, #ff0000 0%, #ff4b4b 50%, #000000 100%); 
+                color: #fff; 
+                box-shadow: inset 0 0 50px rgba(255,0,0,0.5);
+            }
+            .sidebar .sidebar-content { background: #1a1a1a; }
+            .hook-card, .idea-card {
+                background: #2a2a2a;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 0 20px rgba(255,0,0,0.7);
+                margin-bottom: 15px;
+                transition: transform 0.2s;
+            }
+            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .stButton>button {
+                background: #ff0000;
+                color: white;
+                border-radius: 10px;
+                padding: 12px 24px;
+                font-weight: bold;
+                transition: background 0.2s;
+            }
+            .stButton>button:hover { background: #cc0000; }
+            .hook-title, .idea-title { color: #ff4b4b; font-size: 20px; font-weight: bold; }
         """
-    else:
-        return """
-        <style>
-        .main { background-color: #f5f5f5; color: #333333; }
-        .stButton>button {
-            background-color: #ff4b4b;
-            color: white;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: bold;
-        }
-        .stButton>button:hover {
-            background-color: #e04343;
-        }
-        .hook-card {
-            background-color: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
-        }
-        .idea-card {
-            background-color: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
-        }
-        .sidebar .sidebar-content { background-color: #ffffff; }
-        </style>
-        """
+    }
+    return f"<style>{themes.get(st.session_state.theme, themes['light'])}</style>"
 
 st.markdown(get_theme_css(), unsafe_allow_html=True)
 
 # Sidebar for inputs
 with st.sidebar:
-    st.header("HookForge Settings")
-    st.image("https://i.imgur.com/0nKz4lE.png", caption="HookForge Logo")  # Free-hosted image
-    language = st.selectbox("Language", ["English", "Spanish", "French", "German", "Italian", "Portuguese"])
-    niche = st.selectbox("Niche", [
+    st.header("🎬 HookForge Settings")
+    st.image("https://i.imgur.com/0nKz4lE.png", caption="HookForge Logo")
+    language = st.selectbox("🌐 Language", ["English", "Spanish", "French", "German", "Italian", "Portuguese"])
+    niche = st.selectbox("🎯 Niche", [
         "Finance", "Fitness", "Gaming", "Tech", "Motivation", "Self-Improvement",
         "Education", "Vlogs", "Reactions", "True Crime", "Cooking", "Travel",
         "Beauty", "DIY", "Parenting"
     ])
-    tone = st.selectbox("Tone", [
+    tone = st.selectbox("😎 Tone", [
         "Exciting", "Suspenseful", "Relatable", "Controversial", "Funny", "Dramatic"
     ])
-    video_type = st.selectbox("Video Type", [
+    video_type = st.selectbox("🎥 Video Type", [
         "Tutorial", "Listicle", "Storytelling", "Commentary", "Day in the Life",
         "Challenge", "Podcast Clip", "Review", "Interview", "Q&A", "Unboxing"
     ])
-    # Theme toggle
-    theme = st.selectbox("Theme", ["Light", "Dark"], index=0 if st.session_state.theme == "light" else 1)
+    mode = st.selectbox("📱 Platform", ["YouTube", "TikTok/Shorts"], index=0 if st.session_state.mode == "YouTube" else 1)
+    if mode != st.session_state.mode:
+        st.session_state.mode = mode
+        st.experimental_rerun()
+    theme = st.selectbox("🎨 Theme", ["Light", "Dark", "Neon", "Creator Mode"], index=["light", "dark", "neon", "creator"].index(st.session_state.theme))
     if theme.lower() != st.session_state.theme:
         st.session_state.theme = theme.lower()
         st.experimental_rerun()
+    video_brief = st.text_area("📝 Video Brief (Optional)", placeholder="E.g., A tutorial on budgeting for beginners", height=100)
 
 # Main content
-st.title("🎥 HookForge: Viral YouTube Hook Generator")
-st.markdown("Generate **10 viral hooks** and **3 video ideas** for your YouTube videos! Choose your language, niche, tone, and video type, then hit **Generate Hooks**.")
+st.title("🎥 HookForge: Viral Video Hook Generator")
+st.markdown("Generate **10 viral hooks** and **3 video ideas** for your videos! Add a video brief for smarter hooks. Toggle **TikTok/Shorts** for shorter hooks.")
 
 # Language-specific hook templates
 hook_templates = {
@@ -336,6 +379,58 @@ hook_templates = {
     }
 }
 
+# TikTok-specific hook templates (shorter, punchier)
+tiktok_hook_templates = {
+    "English": {
+        "Exciting": ["{keyword} will blow your {niche} mind!", "This {keyword} changes {niche}!", "{keyword} in {niche}? Wow!"],
+        "Suspenseful": ["{keyword} could ruin {niche}!", "Shocking {keyword} in {niche}!", "Is {keyword} {niche}’s end?"],
+        "Relatable": ["{keyword} hits every {niche} fan!", "I get {keyword} in {niche}!", "{keyword} is so {niche}!"],
+        "Controversial": ["{keyword}: {niche}’s big lie?", "{keyword} splits {niche}!", "{keyword} shocks {niche}!"],
+        "Funny": ["{keyword} in {niche}? LOL!", "{keyword} {niche} fail!", "This {keyword} is hilarious!"],
+        "Dramatic": ["{keyword} broke my {niche}!", "{keyword} flips {niche}!", "{keyword} changes {niche}!"]
+    },
+    "Spanish": {
+        "Exciting": ["¡{keyword} te sorprenderá en {niche}!", "¡{keyword} cambia {niche}!", "¡{keyword} en {niche}? Wow!"],
+        "Suspenseful": ["¡{keyword} puede arruinar {niche}!", "¡Impactante {keyword} en {niche}!", "¿Es {keyword} el fin de {niche}?"],
+        "Relatable": ["¡{keyword} conecta con {niche}!", "¡Entiendo {keyword} en {niche}!", "¡{keyword} es tan {niche}!"],
+        "Controversial": ["¿{keyword}: la gran mentira de {niche}?", "¡{keyword} divide {niche}!", "¡{keyword} sacude {niche}!"],
+        "Funny": ["¡{keyword} en {niche}? Jaja!", "¡Fallo de {keyword} en {niche}!", "¡Este {keyword} es gracioso!"],
+        "Dramatic": ["¡{keyword} rompió mi {niche}!", "¡{keyword} da un giro a {niche}!", "¡{keyword} cambia {niche}!"]
+    },
+    "French": {
+        "Exciting": ["{keyword} va secouer {niche} !", "Ce {keyword} change {niche} !", "{keyword} en {niche} ? Wow !"],
+        "Suspenseful": ["{keyword} peut ruiner {niche} !", "Choquant {keyword} en {niche} !", "{keyword}, fin de {niche} ?"],
+        "Relatable": ["{keyword} touche tout fan de {niche} !", "Je comprends {keyword} en {niche} !", "{keyword} est si {niche} !"],
+        "Controversial": ["{keyword} : le grand mensonge de {niche} ?", "{keyword} divise {niche} !", "{keyword} choque {niche} !"],
+        "Funny": ["{keyword} en {niche} ? MDR !", "Échec de {keyword} en {niche} !", "Ce {keyword} est hilarant !"],
+        "Dramatic": ["{keyword} a brisé mon {niche} !", "{keyword} bouleverse {niche} !", "{keyword} change {niche} !"]
+    },
+    "German": {
+        "Exciting": ["{keyword} wird {niche} umhauen!", "Dieser {keyword} ändert {niche}!", "{keyword} in {niche}? Wow!"],
+        "Suspenseful": ["{keyword} könnte {niche} ruinieren!", "Schockierender {keyword} in {niche}!", "Ist {keyword} das Ende von {niche}?"],
+        "Relatable": ["{keyword} trifft jeden {niche}-Fan!", "Ich verstehe {keyword} in {niche}!", "{keyword} ist so {niche}!"],
+        "Controversial": ["Ist {keyword} die große Lüge von {niche}?", "{keyword} spaltet {niche}!", "{keyword} schockiert {niche}!"],
+        "Funny": ["{keyword} in {niche}? LOL!", "{keyword} {niche}-Fail!", "Dieser {keyword} ist urkomisch!"],
+        "Dramatic": ["{keyword} zerstörte mein {niche}!", "{keyword} dreht {niche} um!", "{keyword} ändert {niche}!"]
+    },
+    "Italian": {
+        "Exciting": ["{keyword} ti sconvolgerà in {niche}!", "Questo {keyword} cambia {niche}!", "{keyword} in {niche}? Wow!"],
+        "Suspenseful": ["{keyword} potrebbe rovinare {niche}!", "Scioccante {keyword} in {niche}!", "{keyword} è la fine di {niche}?"],
+        "Relatable": ["{keyword} colpisce ogni fan di {niche}!", "Capisco {keyword} in {niche}!", "{keyword} è così {niche}!"],
+        "Controversial": ["{keyword}: la grande bugia di {niche}?", "{keyword} divide {niche}!", "{keyword} sconvolge {niche}!"],
+        "Funny": ["{keyword} in {niche}? LOL!", "Fallimento di {keyword} in {niche}!", "Questo {keyword} è esilarante!"],
+        "Dramatic": ["{keyword} ha distrutto il mio {niche}!", "{keyword} capovolge {niche}!", "{keyword} cambia {niche}!"]
+    },
+    "Portuguese": {
+        "Exciting": ["{keyword} vai te surpreender em {niche}!", "Este {keyword} muda {niche}!", "{keyword} em {niche}? Nossa!"],
+        "Suspenseful": ["{keyword} pode arruinar {niche}!", "Chocante {keyword} em {niche}!", "{keyword} é o fim de {niche}?"],
+        "Relatable": ["{keyword} conecta todo fã de {niche}!", "Entendo {keyword} em {niche}!", "{keyword} é tão {niche}!"],
+        "Controversial": ["{keyword}: a grande mentira de {niche}?", "{keyword} divide {niche}!", "{keyword} choca {niche}!"],
+        "Funny": ["{keyword} em {niche}? Haha!", "Falha de {keyword} em {niche}!", "Este {keyword} é hilário!"],
+        "Dramatic": ["{keyword} destruiu meu {niche}!", "{keyword} vira {niche} de cabeça para baixo!", "{keyword} muda {niche}!"]
+    }
+}
+
 # Language-specific keywords by niche
 keywords_by_niche = {
     "English": {
@@ -429,7 +524,7 @@ keywords_by_niche = {
         "Gaming": ["dica pro", "código de trapaça", "falha do jogo", "fracasso épico", "ovo de Páscoa"],
         "Tech": ["hack de gadget", "segredo de aplicativo", "mito tecnológico", "truque de IA", "falha de dispositivo"],
         "Motivation": ["mudança de mentalidade", "segredo de sucesso", "hack de vida", "truque de metas", "impulso inspirador"],
-        "Self-Improvement": ["hack de hábitos", "dica de produtividade", "mito de mentalidade", "segredo de crescimento", "falha de autocuidado"],
+        "Self-Improvement": ["hack de hábitos\\[0-9]*"Self-Improvement": ["hack de hábitos", "dica de produtividade", "mito de mentalidade", "segredo de crescimento", "falha de autocuidado"],
         "Education": ["hack de estudo", "truque de aprendizado", "segredo de exames", "mito do conhecimento", "falha escolar"],
         "Vlogs": ["hack diário", "momento de vida", "segredo de vlog", "dica de viagem", "falha de rotina"],
         "Reactions": ["momento viral", "fator de choque", "segredo de meme", "hack de tendência", "falha de reação"],
@@ -501,47 +596,122 @@ video_idea_templates = {
     ]
 }
 
+# A/B test variations
+ab_test_variations = {
+    "Exciting": ["More Urgent: {hook} NOW!", "Softer: Curious about {keyword}? Check this {niche} {video_type}!"],
+    "Suspenseful": ["More Intense: {hook} You CAN’T ignore this!", "Milder: Wondering about {keyword} in {niche}? Find out!"],
+    "Relatable": ["More Personal: {hook} It’s my {niche} story!", "Broader: {keyword} speaks to all {niche} fans!"],
+    "Controversial": ["Stronger: {hook} The TRUTH revealed!", "Toned Down: {keyword} in {niche}—what’s the real story?"],
+    "Funny": ["Exaggerated: {hook} You’ll DIE laughing!", "Subtle: {keyword} in {niche}—pretty funny stuff!"],
+    "Dramatic": ["More Epic: {hook} A {niche} game-changer!", "Calmer: {hook} It shook up my {niche}."]
+}
+
+# Function to extract keywords from brief
+def extract_brief_keywords(brief):
+    if not brief:
+        return []
+    words = brief.lower().split()
+    return [word for word in words if len(word) > 3 and word not in ["this", "that", "with", "from", "about", "your", "video"]][:3]
+
 # Function to generate hooks
-def generate_hooks(language, niche, tone, video_type):
-    templates = hook_templates.get(language, {}).get(tone, hook_templates["English"]["Exciting"])
+def generate_hooks(language, niche, tone, video_type, brief, mode):
+    templates = tiktok_hook_templates if mode == "TikTok/Shorts" else hook_templates
+    templates = templates.get(language, {}).get(tone, hook_templates["English"]["Exciting"])
     keywords = keywords_by_niche.get(language, {}).get(niche, keywords_by_niche["English"]["Motivation"])
+    brief_keywords = extract_brief_keywords(brief)
+    if brief_keywords:
+        keywords = brief_keywords + keywords[:3]  # Prioritize brief keywords
     hooks = []
-    for _ in range(10):  # Generate 10 hooks
+    for _ in range(10):
         template = random.choice(templates)
         keyword = random.choice(keywords)
         hook = template.format(keyword=keyword, niche=niche.lower(), video_type=video_type.lower())
-        hooks.append(hook)
+        if mode == "TikTok/Shorts" and len(hook.split()) > 15:
+            hook = " ".join(hook.split()[:12]) + "..."  # Truncate for TikTok
+        ab_variations = []
+        for var_template in ab_test_variations.get(tone, []):
+            var = var_template.format(hook=hook, keyword=keyword, niche=niche.lower(), video_type=video_type.lower())
+            ab_variations.append(var)
+        hooks.append((hook, ab_variations))
     return hooks
 
 # Function to generate video ideas
-def generate_video_ideas(niche, tone, video_type):
+def generate_video_ideas(niche, tone, video_type, brief):
     templates = video_idea_templates.get(video_type, video_idea_templates["Tutorial"])
-    keywords = keywords_by_niche.get("English", {}).get(niche, keywords_by_niche["English"]["Motivation"])  # Use English for ideas
+    keywords = keywords_by_niche.get("English", {}).get(niche, keywords_by_niche["English"]["Motivation"])
+    brief_keywords = extract_brief_keywords(brief)
+    if brief_keywords:
+        keywords = brief_keywords + keywords[:3]
     ideas = []
-    for _ in range(3):  # Generate 3 ideas
+    for _ in range(3):
         template = random.choice(templates)
         keyword = random.choice(keywords)
         idea = template.format(keyword=keyword, niche=niche.lower(), tone=tone.lower())
         ideas.append(idea)
     return ideas
 
-# Generate hooks and ideas button
-if st.button("Generate Hooks & Ideas"):
-    hooks = generate_hooks(language, niche, tone, video_type)
-    ideas = generate_video_ideas(niche, tone, video_type)
+# Function to calculate virality score
+def calculate_virality_score(hook, tone):
+    score = 50  # Base score
+    words = hook.lower().split()
+    length = len(words)
+    emotional_words = ["shock", "secret", "hack", "fail", "reveal", "truth", "believe", "hilarious", "change", "forever"]
+    if st.session_state.mode == "TikTok/Shorts":
+        if length <= 12:
+            score += 20
+        elif length <= 15:
+            score += 10
+    else:
+        if 10 <= length <= 20:
+            score += 15
+        elif length < 10:
+            score += 5
+    for word in emotional_words:
+        if word in hook.lower():
+            score += 10
+    if tone in ["Exciting", "Suspenseful", "Controversial"]:
+        score += 10
+    elif tone == "Funny":
+        score += 5
+    score = min(score, 100)
+    if score >= 80:
+        return score, "🔥 High potential for 3s retention!"
+    elif score >= 60:
+        return score, "👍 Solid hook, great for engagement!"
+    elif score >= 40:
+        return score, "🤖 Sounds a bit robotic — tweak the tone?"
+    else:
+        return score, "😕 Needs more punch for virality."
+
+# Generate hooks and ideas
+if st.button("🚀 Generate Hooks & Ideas"):
+    hooks = generate_hooks(language, niche, tone, video_type, video_brief, st.session_state.mode)
+    ideas = generate_video_ideas(niche, tone, video_type, video_brief)
+    
+    # Create shareable link
+    query_params = {
+        "language": language,
+        "niche": niche,
+        "tone": tone,
+        "video_type": video_type,
+        "mode": st.session_state.mode,
+        "hooks": "|".join([hook[0] for hook in hooks]),
+        "ideas": "|".join(ideas)
+    }
+    shareable_link = f"https://hookforge-yourname.streamlit.app/?{urllib.parse.urlencode(query_params)}"
     
     # Display hooks
-    st.subheader("Your Viral Hooks")
+    st.subheader("🎣 Your Viral Hooks")
     hook_text = ""
-    for i, hook in enumerate(hooks, 1):
+    for i, (hook, ab_variations) in enumerate(hooks, 1):
         hook_text += f"Hook {i}: {hook}\n"
+        score, feedback = calculate_virality_score(hook, tone)
         with st.container():
-            st.markdown(f"<div class='hook-card'><p class='hook-title'>Hook {i}</p>{hook}</div>", unsafe_allow_html=True)
-            col1, col2 = st.columns([3, 1])
+            st.markdown(f"<div class='hook-card'><p class='hook-title'>Hook {i} (Virality Score: {score}/100)</p>{hook}<br>{feedback}</div>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([3, 1, 1])
             with col1:
-                st.code(hook, language="text")  # Copyable text block
+                st.code(hook, language="text")
             with col2:
-                # JavaScript for copying text
                 st.markdown(f"""
                     <button onclick="navigator.clipboard.writeText('{hook}')">Copy Hook</button>
                     <script>
@@ -554,20 +724,47 @@ if st.button("Generate Hooks & Ideas"):
                     }});
                     </script>
                 """, unsafe_allow_html=True)
+            with col3:
+                st.markdown(f"""
+                    <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20viral%20hook%20I%20made%20with%20HookForge!%20{hook}%20{shareable_link}" target="_blank">
+                        <button>Share on X</button>
+                    </a>
+                """, unsafe_allow_html=True)
+            with st.expander("A/B Test Variations"):
+                for j, var in enumerate(ab_variations, 1):
+                    var_score, var_feedback = calculate_virality_score(var, tone)
+                    st.markdown(f"**Variation {j} (Score: {var_score}/100):** {var} — {var_feedback}")
     
-    # Download hooks button
+    # Download hooks
     st.download_button(
-        label="Download Hooks",
+        label="📥 Download Hooks",
         data=hook_text,
         file_name="hookforge_hooks.txt",
         mime="text/plain"
     )
     
+    # Shareable link
+    st.markdown(f"🔗 **Shareable Link**: <a href='{shareable_link}' target='_blank'>Copy this link</a>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <button onclick="navigator.clipboard.writeText('{shareable_link}')">Copy Link</button>
+        <script>
+        document.querySelectorAll('button').forEach(button => {{
+            if (button.innerText === 'Copy Link') {{
+                button.addEventListener('click', () => {{
+                    navigator.clipboard.writeText('{shareable_link}');
+                    button.innerText = 'Link Copied!';
+                    setTimeout(() => {{ button.innerText = 'Copy Link'; }}, 2000);
+                }});
+            }}
+        }});
+        </script>
+    """, unsafe_allow_html=True)
+    
     # Display video ideas
-    st.subheader("Video Ideas")
+    st.subheader("💡 Video Ideas")
     for i, idea in enumerate(ideas, 1):
         with st.container():
-            st.markdown(f"<div class='idea-card'><p class='hook-title'>Idea {i}</p>{idea}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='idea-card'><p class='idea-title'>Idea {i}</p>{idea}</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
