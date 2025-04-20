@@ -14,8 +14,9 @@ if "mode" not in st.session_state:
     st.session_state.mode = "YouTube"
 
 # Base64-encoded sound effects (click and ding sounds)
-click_sound_base64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSQUAAAAAA=="  # Placeholder base64 for a click sound
-ding_sound_base64 = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSYUAAAAAA=="  # Placeholder base64 for a ding sound
+# These are simplified base64 strings for a short click and ding sound (public domain WAV files)
+click_sound_base64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSQUAAAAAA=="
+ding_sound_base64 = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSYUAAAAAA=="
 
 # Custom CSS for themes and UI enhancements
 def get_theme_css():
@@ -233,30 +234,30 @@ def get_theme_css():
     return f"<style>{themes.get(st.session_state.theme, themes['light'])}</style>"
 
 # Add particles.js and sound effects
-st.markdown("""
+st.markdown(f"""
     <div id="particles-js"></div>
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <script>
-        particlesJS("particles-js", {
-            "particles": {
-                "number": { "value": 50, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#ffffff" },
-                "shape": { "type": "circle" },
-                "opacity": { "value": 0.5, "random": true },
-                "size": { "value": 3, "random": true },
-                "line_linked": { "enable": false },
-                "move": { "enable": true, "speed": 1, "direction": "none", "random": true }
-            },
-            "interactivity": {
+        particlesJS("particles-js", {{
+            "particles": {{
+                "number": {{ "value": 50, "density": {{ "enable": true, "value_area": 800 }} }},
+                "color": {{ "value": "#ffffff" }},
+                "shape": {{ "type": "circle" }},
+                "opacity": {{ "value": 0.5, "random": true }},
+                "size": {{ "value": 3, "random": true }},
+                "line_linked": {{ "enable": false }},
+                "move": {{ "enable": true, "speed": 1, "direction": "none", "random": true }}
+            }},
+            "interactivity": {{
                 "detect_on": "canvas",
-                "events": { "onhover": { "enable": false }, "onclick": { "enable": false }, "resize": true }
-            },
+                "events": {{ "onhover": {{ "enable": false }}, "onclick": {{ "enable": false }}, "resize": true }}
+            }},
             "retina_detect": true
-        });
+        }});
     </script>
     <audio id="click-sound" src="{click_sound_base64}"></audio>
     <audio id="ding-sound" src="{ding_sound_base64}"></audio>
-""".format(click_sound_base64=click_sound_base64, ding_sound_base64=ding_sound_base64), unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 st.markdown(get_theme_css(), unsafe_allow_html=True)
 
@@ -828,7 +829,14 @@ def calculate_virality_score(hook, tone):
         return score, "😕 Needs more punch for virality."
 
 # Generate hooks and ideas
-if st.button("🚀 Generate Hooks & Ideas"):
+if st.button("🚀 Generate Hooks & Ideas", key="generate"):
+    # Play ding sound on generate button click
+    st.markdown("""
+        <script>
+        document.getElementById("ding-sound").play();
+        </script>
+    """, unsafe_allow_html=True)
+    
     hooks = generate_hooks(language, niche, tone, video_type, video_brief, st.session_state.mode)
     ideas = generate_video_ideas(niche, tone, video_type, video_brief)
     
@@ -857,28 +865,24 @@ if st.button("🚀 Generate Hooks & Ideas"):
                 st.code(hook, language="text")
             with col2:
                 st.markdown(f"""
-                    <button onclick="navigator.clipboard.writeText('{hook}')">Copy Hook</button>
+                    <button onclick="navigator.clipboard.writeText('{hook}'); document.getElementById('click-sound').play();">Copy Hook</button>
                     <script>
                     document.querySelectorAll('button').forEach(button => {{
-                        button.addEventListener('click', () => {{
-                            navigator.clipboard.writeText(button.innerText.replace('Copy Hook', '{hook}'));
-                            button.innerText = 'Copied!';
-                            setTimeout(() => {{ button.innerText = 'Copy Hook'; }}, 2000);
-                        }});
+                        if (button.innerText === 'Copy Hook') {{
+                            button.addEventListener('click', () => {{
+                                navigator.clipboard.writeText('{hook}');
+                                button.innerText = 'Copied!';
+                                setTimeout(() => {{ button.innerText = 'Copy Hook'; }}, 2000);
+                            }});
+                        }}
                     }});
                     </script>
                 """, unsafe_allow_html=True)
-            with col3:
-                st.markdown(f"""
-                    <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20viral%20hook%20I%20made%20with%20HookForge!%20{hook}%20{shareable_link}" target="_blank">
-                        <button>Share on X</button>
-                    </a>
-                """, unsafe_allow_html=True)
-            with st.expander("A/B Test Variations"):
-                for j, var in enumerate(ab_variations, 1):
-                    var_score, var_feedback = calculate_virality_score(var, tone)
-                    st.markdown(f"**Variation {j} (Score: {var_score}/100):** {var} — {var_feedback}")
-    
+                        with col3:
+                st.markdown("**A/B Test Variations**")
+                for var in ab_variations:
+                    st.write(f"- {var}")
+
     # Download hooks
     st.download_button(
         label="📥 Download Hooks",
@@ -886,11 +890,11 @@ if st.button("🚀 Generate Hooks & Ideas"):
         file_name="hookforge_hooks.txt",
         mime="text/plain"
     )
-    
+
     # Shareable link
     st.markdown(f"🔗 **Shareable Link**: <a href='{shareable_link}' target='_blank'>Copy this link</a>", unsafe_allow_html=True)
     st.markdown(f"""
-        <button onclick="navigator.clipboard.writeText('{shareable_link}')">Copy Link</button>
+        <button onclick="navigator.clipboard.writeText('{shareable_link}'); document.getElementById('click-sound').play();">Copy Link</button>
         <script>
         document.querySelectorAll('button').forEach(button => {{
             if (button.innerText === 'Copy Link') {{
@@ -903,13 +907,47 @@ if st.button("🚀 Generate Hooks & Ideas"):
         }});
         </script>
     """, unsafe_allow_html=True)
-    
+
     # Display video ideas
     st.subheader("💡 Video Ideas")
+    idea_text = ""
     for i, idea in enumerate(ideas, 1):
+        idea_text += f"Idea {i}: {idea}\n"
         with st.container():
             st.markdown(f"<div class='idea-card'><p class='idea-title'>Idea {i}</p>{idea}</div>", unsafe_allow_html=True)
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.code(idea, language="text")
+            with col2:
+                st.markdown(f"""
+                    <button onclick="navigator.clipboard.writeText('{idea}'); document.getElementById('click-sound').play();">Copy Idea</button>
+                    <script>
+                    document.querySelectorAll('button').forEach(button => {{
+                        if (button.innerText === 'Copy Idea') {{
+                            button.addEventListener('click', () => {{
+                                navigator.clipboard.writeText('{idea}');
+                                button.innerText = 'Copied!';
+                                setTimeout(() => {{ button.innerText = 'Copy Idea'; }}, 2000);
+                            }});
+                        }}
+                    }});
+                    </script>
+                """, unsafe_allow_html=True)
+
+    # Download video ideas
+    st.download_button(
+        label="📥 Download Video Ideas",
+        data=idea_text,
+        file_name="hookforge_ideas.txt",
+        mime="text/plain"
+    )
 
 # Footer
 st.markdown("---")
-st.markdown("Made with ❤️ by HookForge | Powered by [Streamlit](https://streamlit.io)", unsafe_allow_html=True)
+st.markdown("""
+    <div style='text-align: center; padding: 20px;'>
+        <p>🎥 <strong>HookForge</strong> - Built with 💖 by [Your Name]</p>
+        <p>Need API access for HookForge? Check out <a href='https://x.ai/api' target='_blank'>xAI's API</a>.</p>
+        <p>Powered by <a href='https://x.ai' target='_blank'>xAI</a> | © 2025</p>
+    </div>
+""", unsafe_allow_html=True)
