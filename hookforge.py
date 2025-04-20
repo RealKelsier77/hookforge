@@ -524,7 +524,7 @@ keywords_by_niche = {
         "Gaming": ["dica pro", "código de trapaça", "falha do jogo", "fracasso épico", "ovo de Páscoa"],
         "Tech": ["hack de gadget", "segredo de aplicativo", "mito tecnológico", "truque de IA", "falha de dispositivo"],
         "Motivation": ["mudança de mentalidade", "segredo de sucesso", "hack de vida", "truque de metas", "impulso inspirador"],
-        "Self-Improvement": ["hack de hábitos\\[0-9]*"Self-Improvement": ["hack de hábitos", "dica de produtividade", "mito de mentalidade", "segredo de crescimento", "falha de autocuidado"],
+        "Self-Improvement": ["hack de hábitos", "dica de produtividade", "mito de mentalidade", "segredo de crescimento", "falha de autocuidado"],
         "Education": ["hack de estudo", "truque de aprendizado", "segredo de exames", "mito do conhecimento", "falha escolar"],
         "Vlogs": ["hack diário", "momento de vida", "segredo de vlog", "dica de viagem", "falha de rotina"],
         "Reactions": ["momento viral", "fator de choque", "segredo de meme", "hack de tendência", "falha de reação"],
