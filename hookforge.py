@@ -2,6 +2,7 @@ import streamlit as st
 import random
 import io
 import urllib.parse
+import base64
 
 # Streamlit page configuration
 st.set_page_config(page_title="HookForge", page_icon="🎥", layout="wide")
@@ -12,11 +13,32 @@ if "theme" not in st.session_state:
 if "mode" not in st.session_state:
     st.session_state.mode = "YouTube"
 
-# Custom CSS for themes
+# Base64-encoded sound effects (click and ding sounds)
+click_sound_base64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSQUAAAAAA=="  # Placeholder base64 for a click sound
+ding_sound_base64 = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YSYUAAAAAA=="  # Placeholder base64 for a ding sound
+
+# Custom CSS for themes and UI enhancements
 def get_theme_css():
     themes = {
         "light": """
-            .main { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #333; }
+            .main { 
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+                color: #333; 
+                position: relative; 
+                overflow: hidden; 
+            }
+            #particles-js { 
+                position: absolute; 
+                width: 100%; 
+                height: 100%; 
+                top: 0; 
+                left: 0; 
+                z-index: 0; 
+            }
+            .main > * { 
+                position: relative; 
+                z-index: 1; 
+            }
             .sidebar .sidebar-content { background: #ffffff; }
             .hook-card, .idea-card {
                 background: white;
@@ -24,22 +46,51 @@ def get_theme_css():
                 border-radius: 12px;
                 box-shadow: 0 6px 12px rgba(0,0,0,0.1);
                 margin-bottom: 15px;
-                transition: transform 0.2s;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                opacity: 0;
+                animation: fadeIn 0.5s forwards;
             }
-            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .hook-card:hover, .idea-card:hover { 
+                transform: translateY(-5px); 
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2), 0 0 10px rgba(0,0,0,0.1); 
+            }
             .stButton>button {
                 background: #ff4b4b;
                 color: white;
                 border-radius: 10px;
                 padding: 12px 24px;
                 font-weight: bold;
-                transition: background 0.2s;
+                transition: transform 0.2s ease, background 0.2s ease;
             }
-            .stButton>button:hover { background: #e04343; }
+            .stButton>button:hover { 
+                background: #e04343; 
+                transform: scale(1.05); 
+            }
             .hook-title, .idea-title { color: #333; font-size: 20px; font-weight: bold; }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         """,
         "dark": """
-            .main { background: linear-gradient(135deg, #1e1e1e 0%, #434343 100%); color: #fff; }
+            .main { 
+                background: linear-gradient(135deg, #1e1e1e 0%, #434343 100%); 
+                color: #fff; 
+                position: relative; 
+                overflow: hidden; 
+            }
+            #particles-js { 
+                position: absolute; 
+                width: 100%; 
+                height: 100%; 
+                top: 0; 
+                left: 0; 
+                z-index: 0; 
+            }
+            .main > * { 
+                position: relative; 
+                z-index: 1; 
+            }
             .sidebar .sidebar-content { background: #2a2a2a; }
             .hook-card, .idea-card {
                 background: #2a2a2a;
@@ -47,22 +98,51 @@ def get_theme_css():
                 border-radius: 12px;
                 box-shadow: 0 6px 12px rgba(0,0,0,0.3);
                 margin-bottom: 15px;
-                transition: transform 0.2s;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                opacity: 0;
+                animation: fadeIn 0.5s forwards;
             }
-            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .hook-card:hover, .idea-card:hover { 
+                transform: translateY(-5px); 
+                box-shadow: 0 8px 20px rgba(0,0,0,0.4), 0 0 10px rgba(0,0,0,0.2); 
+            }
             .stButton>button {
                 background: #ff4b4b;
                 color: white;
                 border-radius: 10px;
                 padding: 12px 24px;
                 font-weight: bold;
-                transition: background 0.2s;
+                transition: transform 0.2s ease, background 0.2s ease;
             }
-            .stButton>button:hover { background: #e04343; }
+            .stButton>button:hover { 
+                background: #e04343; 
+                transform: scale(1.05); 
+            }
             .hook-title, .idea-title { color: #fff; font-size: 20px; font-weight: bold; }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         """,
         "neon": """
-            .main { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: #fff; }
+            .main { 
+                background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); 
+                color: #fff; 
+                position: relative; 
+                overflow: hidden; 
+            }
+            #particles-js { 
+                position: absolute; 
+                width: 100%; 
+                height: 100%; 
+                top: 0; 
+                left: 0; 
+                z-index: 0; 
+            }
+            .main > * { 
+                position: relative; 
+                z-index: 1; 
+            }
             .sidebar .sidebar-content { background: #1a2a44; }
             .hook-card, .idea-card {
                 background: #1a2a44;
@@ -70,25 +150,51 @@ def get_theme_css():
                 border-radius: 12px;
                 box-shadow: 0 0 15px rgba(0,255,255,0.5);
                 margin-bottom: 15px;
-                transition: transform 0.2s;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                opacity: 0;
+                animation: fadeIn 0.5s forwards;
             }
-            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .hook-card:hover, .idea-card:hover { 
+                transform: translateY(-5px); 
+                box-shadow: 0 8px 20px rgba(0,255,255,0.7), 0 0 15px rgba(0,255,255,0.3); 
+            }
             .stButton>button {
                 background: #00ffcc;
                 color: #000;
                 border-radius: 10px;
                 padding: 12px 24px;
                 font-weight: bold;
-                transition: background 0.2s;
+                transition: transform 0.2s ease, background 0.2s ease;
             }
-            .stButton>button:hover { background: #00ccaa; }
+            .stButton>button:hover { 
+                background: #00ccaa; 
+                transform: scale(1.05); 
+            }
             .hook-title, .idea-title { color: #00ffcc; font-size: 20px; font-weight: bold; }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         """,
         "creator": """
             .main { 
                 background: linear-gradient(135deg, #ff0000 0%, #ff4b4b 50%, #000000 100%); 
                 color: #fff; 
-                box-shadow: inset 0 0 50px rgba(255,0,0,0.5);
+                box-shadow: inset 0 0 50px rgba(255,0,0,0.5); 
+                position: relative; 
+                overflow: hidden; 
+            }
+            #particles-js { 
+                position: absolute; 
+                width: 100%; 
+                height: 100%; 
+                top: 0; 
+                left: 0; 
+                z-index: 0; 
+            }
+            .main > * { 
+                position: relative; 
+                z-index: 1; 
             }
             .sidebar .sidebar-content { background: #1a1a1a; }
             .hook-card, .idea-card {
@@ -97,29 +203,67 @@ def get_theme_css():
                 border-radius: 12px;
                 box-shadow: 0 0 20px rgba(255,0,0,0.7);
                 margin-bottom: 15px;
-                transition: transform 0.2s;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                opacity: 0;
+                animation: fadeIn 0.5s forwards;
             }
-            .hook-card:hover, .idea-card:hover { transform: translateY(-5px); }
+            .hook-card:hover, .idea-card:hover { 
+                transform: translateY(-5px); 
+                box-shadow: 0 8px 20px rgba(255,0,0,0.9), 0 0 15px rgba(255,0,0,0.5); 
+            }
             .stButton>button {
                 background: #ff0000;
                 color: white;
                 border-radius: 10px;
                 padding: 12px 24px;
                 font-weight: bold;
-                transition: background 0.2s;
+                transition: transform 0.2s ease, background 0.2s ease;
             }
-            .stButton>button:hover { background: #cc0000; }
+            .stButton>button:hover { 
+                background: #cc0000; 
+                transform: scale(1.05); 
+            }
             .hook-title, .idea-title { color: #ff4b4b; font-size: 20px; font-weight: bold; }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         """
     }
     return f"<style>{themes.get(st.session_state.theme, themes['light'])}</style>"
+
+# Add particles.js and sound effects
+st.markdown("""
+    <div id="particles-js"></div>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 50, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#ffffff" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.5, "random": true },
+                "size": { "value": 3, "random": true },
+                "line_linked": { "enable": false },
+                "move": { "enable": true, "speed": 1, "direction": "none", "random": true }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": { "onhover": { "enable": false }, "onclick": { "enable": false }, "resize": true }
+            },
+            "retina_detect": true
+        });
+    </script>
+    <audio id="click-sound" src="{click_sound_base64}"></audio>
+    <audio id="ding-sound" src="{ding_sound_base64}"></audio>
+""".format(click_sound_base64=click_sound_base64, ding_sound_base64=ding_sound_base64), unsafe_allow_html=True)
 
 st.markdown(get_theme_css(), unsafe_allow_html=True)
 
 # Sidebar for inputs
 with st.sidebar:
     st.header("🎬 HookForge Settings")
-    st.image("https://i.imgur.com/0nKz4lE.png", caption="HookForge Logo")
+    st.image("https://via.placeholder.com/150.png?text=HookForge", caption="HookForge Logo")
     language = st.selectbox("🌐 Language", ["English", "Spanish", "French", "German", "Italian", "Portuguese"])
     niche = st.selectbox("🎯 Niche", [
         "Finance", "Fitness", "Gaming", "Tech", "Motivation", "Self-Improvement",
@@ -136,11 +280,11 @@ with st.sidebar:
     mode = st.selectbox("📱 Platform", ["YouTube", "TikTok/Shorts"], index=0 if st.session_state.mode == "YouTube" else 1)
     if mode != st.session_state.mode:
         st.session_state.mode = mode
-        st.experimental_rerun()
+        st.rerun()
     theme = st.selectbox("🎨 Theme", ["Light", "Dark", "Neon", "Creator Mode"], index=["light", "dark", "neon", "creator"].index(st.session_state.theme))
     if theme.lower() != st.session_state.theme:
         st.session_state.theme = theme.lower()
-        st.experimental_rerun()
+        st.rerun()
     video_brief = st.text_area("📝 Video Brief (Optional)", placeholder="E.g., A tutorial on budgeting for beginners", height=100)
 
 # Main content
