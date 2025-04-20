@@ -1,40 +1,87 @@
 import streamlit as st
 import random
+import io
 
 # Streamlit page configuration
 st.set_page_config(page_title="HookForge", page_icon="🎥", layout="wide")
 
-# Custom CSS for enhanced UI
-st.markdown("""
-    <style>
-    .main { background-color: #f5f5f5; }
-    .stButton>button {
-        background-color: #ff4b4b;
-        color: white;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: bold;
-    }
-    .stButton>button:hover {
-        background-color: #e04343;
-    }
-    .hook-card {
-        background-color: white;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        margin-bottom: 10px;
-    }
-    .hook-title { color: #333; font-size: 18px; font-weight: bold; }
-    .copy-code { background-color: #f0f0f0; border-radius: 5px; }
-    </style>
-""", unsafe_allow_html=True)
+# Initialize session state for theme
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+# Custom CSS for light and dark themes
+def get_theme_css():
+    if st.session_state.theme == "dark":
+        return """
+        <style>
+        .main { background-color: #1e1e1e; color: #ffffff; }
+        .stButton>button {
+            background-color: #ff4b4b;
+            color: white;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+        .stButton>button:hover {
+            background-color: #e04343;
+        }
+        .hook-card {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+        .hook-title { color: #ffffff; font-size: 18px; font-weight: bold; }
+        .idea-card {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+        .sidebar .sidebar-content { background-color: #2a2a2a; }
+        </style>
+        """
+    else:
+        return """
+        <style>
+        .main { background-color: #f5f5f5; color: #333333; }
+        .stButton>button {
+            background-color: #ff4b4b;
+            color: white;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+        .stButton>button:hover {
+            background-color: #e04343;
+        }
+        .hook-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        .idea-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        .sidebar .sidebar-content { background-color: #ffffff; }
+        </style>
+        """
+
+st.markdown(get_theme_css(), unsafe_allow_html=True)
 
 # Sidebar for inputs
 with st.sidebar:
     st.header("HookForge Settings")
     st.image("https://i.imgur.com/0nKz4lE.png", caption="HookForge Logo")  # Free-hosted image
-    language = st.selectbox("Language", ["English", "Spanish", "French", "German"])
+    language = st.selectbox("Language", ["English", "Spanish", "French", "German", "Italian", "Portuguese"])
     niche = st.selectbox("Niche", [
         "Finance", "Fitness", "Gaming", "Tech", "Motivation", "Self-Improvement",
         "Education", "Vlogs", "Reactions", "True Crime", "Cooking", "Travel",
@@ -47,10 +94,15 @@ with st.sidebar:
         "Tutorial", "Listicle", "Storytelling", "Commentary", "Day in the Life",
         "Challenge", "Podcast Clip", "Review", "Interview", "Q&A", "Unboxing"
     ])
+    # Theme toggle
+    theme = st.selectbox("Theme", ["Light", "Dark"], index=0 if st.session_state.theme == "light" else 1)
+    if theme.lower() != st.session_state.theme:
+        st.session_state.theme = theme.lower()
+        st.experimental_rerun()
 
 # Main content
 st.title("🎥 HookForge: Viral YouTube Hook Generator")
-st.markdown("Generate **10 viral hooks** for your YouTube videos! Choose your language, niche, tone, and video type, then hit **Generate Hooks**.")
+st.markdown("Generate **10 viral hooks** and **3 video ideas** for your YouTube videos! Choose your language, niche, tone, and video type, then hit **Generate Hooks**.")
 
 # Language-specific hook templates
 hook_templates = {
@@ -205,6 +257,82 @@ hook_templates = {
             "Wie {keyword} mein {niche} auf den Kopf stellte!",
             "Der {keyword}, der {niche} für immer veränderte!"
         ]
+    },
+    "Italian": {
+        "Exciting": [
+            "Non crederai a questo {keyword} che cambierà il tuo gioco in {niche}!",
+            "Questo {video_type} rivela il {keyword} di cui tutti parlano!",
+            "Preparati per un {keyword} in {niche} che DEVI conoscere!",
+            "Il {keyword} che sta conquistando {niche}!"
+        ],
+        "Suspenseful": [
+            "E se {keyword} potesse rovinare il tuo {niche} per sempre?",
+            "Il {keyword} dietro questo {video_type} ti sconvolgerà!",
+            "Questo segreto di {niche} su {keyword} cambia tutto...",
+            "Questo {keyword} è la fine di {niche} come lo conosciamo?"
+        ],
+        "Relatable": [
+            "In difficoltà con {niche}? Questo {keyword} è per TE!",
+            "Ho provato {keyword} nel mio {video_type} ed era così reale!",
+            "Ogni fan di {niche} si riconoscerà in questo {keyword}!",
+            "Questo {keyword} è il motivo per cui amo {niche}!"
+        ],
+        "Controversial": [
+            "È {keyword} la più grande bugia in {niche}?",
+            "Questo {video_type} espone il {keyword} di cui nessuno parla!",
+            "Perché {keyword} sta dividendo la comunità di {niche}!",
+            "La verità su {keyword} che {niche} non vuole che tu sappia!"
+        ],
+        "Funny": [
+            "Ho provato {keyword} in {niche} ed è stato ESILARANTE!",
+            "Questo {video_type} su {keyword} ti farà ridere a crepapelle!",
+            "Chi avrebbe mai pensato che {niche} potesse essere così {keyword} divertente?",
+            "Il fallimento di {keyword} che ha spaccato internet!"
+        ],
+        "Dramatic": [
+            "Il {keyword} che ha distrutto il mio percorso in {niche}!",
+            "Questo {video_type} scopre un {keyword} che non puoi ignorare!",
+            "Come {keyword} ha capovolto il mio {niche}!",
+            "Il {keyword} che ha cambiato {niche} per sempre!"
+        ]
+    },
+    "Portuguese": {
+        "Exciting": [
+            "Você não vai acreditar neste {keyword} que vai mudar seu jogo em {niche}!",
+            "Este {video_type} revela o {keyword} que todos estão falando!",
+            "Prepare-se para um {keyword} em {niche} que você PRECISA conhecer!",
+            "O {keyword} que está tomando {niche} de assalto!"
+        ],
+        "Suspenseful": [
+            "E se {keyword} pudesse arruinar seu {niche} para sempre?",
+            "O {keyword} por trás deste {video_type} vai te chocar!",
+            "Este segredo de {niche} sobre {keyword} muda tudo...",
+            "Este {keyword} é o fim de {niche} como conhecemos?"
+        ],
+        "Relatable": [
+            "Com dificuldades em {niche}? Este {keyword} é para VOCÊ!",
+            "Eu tentei {keyword} no meu {video_type} e pareceu tão real!",
+            "Todo fã de {niche} vai se identificar com este {keyword}!",
+            "Este {keyword} é por que eu amo {niche}!"
+        ],
+        "Controversial": [
+            "É {keyword} a maior mentira em {niche}?",
+            "Este {video_type} expõe o {keyword} que ninguém fala!",
+            "Por que {keyword} está dividindo a comunidade de {niche}!",
+            "A verdade sobre {keyword} que {niche} não quer que você saiba!"
+        ],
+        "Funny": [
+            "Eu tentei {keyword} em {niche} e foi HILÁRIO!",
+            "Este {video_type} sobre {keyword} vai te fazer rir muito!",
+            "Quem diria que {niche} poderia ser tão {keyword} engraçado?",
+            "A falha de {keyword} que quebrou a internet!"
+        ],
+        "Dramatic": [
+            "O {keyword} que destruiu minha jornada em {niche}!",
+            "Este {video_type} descobre um {keyword} que você não pode ignorar!",
+            "Como {keyword} virou meu {niche} de cabeça para baixo!",
+            "O {keyword} que mudou {niche} para sempre!"
+        ]
     }
 }
 
@@ -277,7 +405,100 @@ keywords_by_niche = {
         "Beauty": ["Make-up-Hack", "Hautpflegegeheimnis", "Schönheitsmythos", "Stiltrick", "Glamourfehler"],
         "DIY": ["Bastel-Hack", "Projekttipp", "DIY-Fehler", "Upcycling-Geheimnis", "Baukunsttrick"],
         "Parenting": ["Eltern-Hack", "Kinder-Tipp", "Familiengeheimnis", "Kleinkind-Trick", "Mama-Fehler"]
+    },
+    "Italian": {
+        "Finance": ["trucco per milioni", "hack di investimento", "errore finanziario", "lavoretto extra", "trappola di debiti"],
+        "Fitness": ["segreto di allenamento", "hack di dieta", "mito muscolare", "trucco cardio", "fallimento fitness"],
+        "Gaming": ["consiglio pro", "codice cheat", "glitch di gioco", "fallimento epico", "uovo di Pasqua"],
+        "Tech": ["hack di gadget", "segreto di app", "mito tecnologico", "trucco di IA", "fallimento di dispositivo"],
+        "Motivation": ["cambio di mentalità", "segreto di successo", "hack di vita", "trucco di obiettivi", "spinta ispiratrice"],
+        "Self-Improvement": ["hack di abitudini", "consiglio di produttività", "mito di mentalità", "segreto di crescita", "fallimento di autocura"],
+        "Education": ["hack di studio", "trucco di apprendimento", "segreto di esami", "mito della conoscenza", "fallimento scolastico"],
+        "Vlogs": ["hack quotidiano", "momento di vita", "segreto di vlog", "consiglio di viaggio", "fallimento di routine"],
+        "Reactions": ["momento virale", "fattore shock", "segreto di meme", "hack di tendenza", "fallimento di reazione"],
+        "True Crime": ["segreto del caso", "hack di mistero", "mito criminale", "rivelazione di colpo di scena", "fallimento di sospetto"],
+        "Cooking": ["hack di ricetta", "consiglio di cucina", "fallimento in cucina", "segreto di sapore", "trucco di pasto"],
+        "Travel": ["hack di destinazione", "consiglio di viaggio", "segreto di budget", "fallimento di avventura", "trucco culturale"],
+        "Beauty": ["hack di trucco", "segreto di cura della pelle", "mito di bellezza", "trucco di stile", "fallimento di glamour"],
+        "DIY": ["hack di artigianato", "consiglio di progetto", "fallimento di fai-da-te", "segreto di riciclo", "trucco di costruzione"],
+        "Parenting": ["hack di genitorialità", "consiglio per bambini", "segreto familiare", "trucco per piccoli", "fallimento di mamma"]
+    },
+    "Portuguese": {
+        "Finance": ["truque para milhões", "hack de investimento", "erro financeiro", "renda extra", "armadilha de dívidas"],
+        "Fitness": ["segredo de treino", "hack de dieta", "mito muscular", "truque de cardio", "falha de fitness"],
+        "Gaming": ["dica pro", "código de trapaça", "falha do jogo", "fracasso épico", "ovo de Páscoa"],
+        "Tech": ["hack de gadget", "segredo de aplicativo", "mito tecnológico", "truque de IA", "falha de dispositivo"],
+        "Motivation": ["mudança de mentalidade", "segredo de sucesso", "hack de vida", "truque de metas", "impulso inspirador"],
+        "Self-Improvement": ["hack de hábitos", "dica de produtividade", "mito de mentalidade", "segredo de crescimento", "falha de autocuidado"],
+        "Education": ["hack de estudo", "truque de aprendizado", "segredo de exames", "mito do conhecimento", "falha escolar"],
+        "Vlogs": ["hack diário", "momento de vida", "segredo de vlog", "dica de viagem", "falha de rotina"],
+        "Reactions": ["momento viral", "fator de choque", "segredo de meme", "hack de tendência", "falha de reação"],
+        "True Crime": ["segredo do caso", "hack de mistério", "mito criminal", "revelação de reviravolta", "falha de suspeito"],
+        "Cooking": ["hack de receita", "dica de cozinha", "falha na cozinha", "segredo de sabor", "truque de refeição"],
+        "Travel": ["hack de destino", "dica de viagem", "segredo de orçamento", "falha de aventura", "truque cultural"],
+        "Beauty": ["hack de maquiagem", "segredo de cuidados com a pele", "mito de beleza", "truque de estilo", "falha de glamour"],
+        "DIY": ["hack de artesanato", "dica de projeto", "falha de faça-você-mesmo", "segredo de reciclagem", "truque de construção"],
+        "Parenting": ["hack de parentalidade", "dica para crianças", "segredo familiar", "truque para bebês", "falha de mãe"]
     }
+}
+
+# Video idea templates
+video_idea_templates = {
+    "Tutorial": [
+        "Teach viewers how to master {keyword} in {niche} with a step-by-step guide.",
+        "Create a {tone} tutorial on using {keyword} to improve your {niche} skills.",
+        "Show beginners how to get started with {keyword} in {niche}."
+    ],
+    "Listicle": [
+        "Rank the top 5 {keyword} tips for {niche} in a {tone} list.",
+        "Compile a {tone} list of the best {keyword} hacks for {niche} fans.",
+        "Share a {tone} countdown of {keyword} mistakes to avoid in {niche}."
+    ],
+    "Storytelling": [
+        "Tell a {tone} story about how {keyword} transformed your {niche} journey.",
+        "Share a personal {tone} tale of overcoming {keyword} challenges in {niche}.",
+        "Craft a {tone} narrative around a {keyword} moment in {niche}."
+    ],
+    "Commentary": [
+        "Give a {tone} take on the latest {keyword} trends in {niche}.",
+        "Analyze the impact of {keyword} on {niche} with a {tone} perspective.",
+        "Discuss why {keyword} is shaking up {niche} in a {tone} commentary."
+    ],
+    "Day in the Life": [
+        "Show a {tone} day incorporating {keyword} into your {niche} routine.",
+        "Document how {keyword} shapes a {tone} day in {niche}.",
+        "Create a {tone} vlog of using {keyword} in your {niche} lifestyle."
+    ],
+    "Challenge": [
+        "Take on a {tone} {keyword} challenge in {niche} and share the results.",
+        "Try a {tone} 30-day {keyword} challenge for {niche}.",
+        "Invite viewers to join a {tone} {keyword} challenge in {niche}."
+    ],
+    "Podcast Clip": [
+        "Share a {tone} podcast clip discussing {keyword} in {niche}.",
+        "Highlight a {tone} conversation about {keyword} from your {niche} podcast.",
+        "Extract a {tone} moment about {keyword} from a {niche} podcast episode."
+    ],
+    "Review": [
+        "Review a {keyword} product or tool for {niche} with a {tone} perspective.",
+        "Test and share a {tone} review of {keyword} in {niche}.",
+        "Compare {keyword} options for {niche} in a {tone} review."
+    ],
+    "Interview": [
+        "Interview a {niche} expert on {keyword} with a {tone} approach.",
+        "Host a {tone} chat with a {niche} pro about {keyword}.",
+        "Ask a {niche} influencer about their {keyword} experience in a {tone} interview."
+    ],
+    "Q&A": [
+        "Answer viewer questions about {keyword} in {niche} with a {tone} vibe.",
+        "Host a {tone} Q&A session on {keyword} for {niche} fans.",
+        "Tackle common {keyword} queries in {niche} with a {tone} Q&A."
+    ],
+    "Unboxing": [
+        "Unbox a {keyword} product for {niche} with a {tone} reaction.",
+        "Showcase a {tone} unboxing of a {keyword} item in {niche}.",
+        "Reveal a {keyword} package for {niche} in a {tone} unboxing video."
+    ]
 }
 
 # Function to generate hooks
@@ -292,14 +513,61 @@ def generate_hooks(language, niche, tone, video_type):
         hooks.append(hook)
     return hooks
 
-# Generate hooks button
-if st.button("Generate Hooks"):
+# Function to generate video ideas
+def generate_video_ideas(niche, tone, video_type):
+    templates = video_idea_templates.get(video_type, video_idea_templates["Tutorial"])
+    keywords = keywords_by_niche.get("English", {}).get(niche, keywords_by_niche["English"]["Motivation"])  # Use English for ideas
+    ideas = []
+    for _ in range(3):  # Generate 3 ideas
+        template = random.choice(templates)
+        keyword = random.choice(keywords)
+        idea = template.format(keyword=keyword, niche=niche.lower(), tone=tone.lower())
+        ideas.append(idea)
+    return ideas
+
+# Generate hooks and ideas button
+if st.button("Generate Hooks & Ideas"):
     hooks = generate_hooks(language, niche, tone, video_type)
+    ideas = generate_video_ideas(niche, tone, video_type)
+    
+    # Display hooks
     st.subheader("Your Viral Hooks")
+    hook_text = ""
     for i, hook in enumerate(hooks, 1):
+        hook_text += f"Hook {i}: {hook}\n"
         with st.container():
             st.markdown(f"<div class='hook-card'><p class='hook-title'>Hook {i}</p>{hook}</div>", unsafe_allow_html=True)
-            st.code(hook, language="text")  # Copyable text block
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.code(hook, language="text")  # Copyable text block
+            with col2:
+                # JavaScript for copying text
+                st.markdown(f"""
+                    <button onclick="navigator.clipboard.writeText('{hook}')">Copy Hook</button>
+                    <script>
+                    document.querySelectorAll('button').forEach(button => {{
+                        button.addEventListener('click', () => {{
+                            navigator.clipboard.writeText(button.innerText.replace('Copy Hook', '{hook}'));
+                            button.innerText = 'Copied!';
+                            setTimeout(() => {{ button.innerText = 'Copy Hook'; }}, 2000);
+                        }});
+                    }});
+                    </script>
+                """, unsafe_allow_html=True)
+    
+    # Download hooks button
+    st.download_button(
+        label="Download Hooks",
+        data=hook_text,
+        file_name="hookforge_hooks.txt",
+        mime="text/plain"
+    )
+    
+    # Display video ideas
+    st.subheader("Video Ideas")
+    for i, idea in enumerate(ideas, 1):
+        with st.container():
+            st.markdown(f"<div class='idea-card'><p class='hook-title'>Idea {i}</p>{idea}</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
