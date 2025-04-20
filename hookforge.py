@@ -879,9 +879,9 @@ if st.button("🚀 Generate Hooks & Ideas", key="generate"):
                     </script>
                 """, unsafe_allow_html=True)
                 with col3:
-                st.markdown("**A/B Test Variations**")
-                for var in ab_variations:
-                    st.write(f"- {var}")
+                    st.markdown("**A/B Test Variations**")
+                    for var in ab_variations:
+                        st.write(f"- {var}")
 
     # Download hooks
     st.download_button(
